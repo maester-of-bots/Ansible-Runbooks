@@ -1,0 +1,24 @@
+---
+- name: Deploy CentOS 7 VM to ESXi
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Clone CentOS 7 VM from Template
+      community.vmware.vmware_guest:
+        hostname: 10.0.5.6
+        username: "{{ vcenter_username }}"
+        password: ""
+        validate_certs: no
+        datacenter: "TGS-DC"
+        folder: "/TGS-DC/vm"
+        name: "{{ vm_name }}"
+        state: poweredon
+        template: "{{ template_name }}"
+        datastore: "{{ datastore_name }}"
+        esxi_hostname: "{{ esxi_host }}"
+      register: vm_details
+
+    - name: Wait for VM to start
+      pause:
+        seconds: 10
+      when: vm_details is changed

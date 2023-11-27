@@ -1,0 +1,11 @@
+[Unit]
+Description={{Service_Description}}
+After=network.target
+
+[Service]
+User=TGS
+ExecStart={{ExecStart}}
+WorkingDirectory={{WorkingDirectory}}
+
+[Install]
+WantedBy=multi-user.target

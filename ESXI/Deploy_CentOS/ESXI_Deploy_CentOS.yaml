@@ -1,0 +1,103 @@
+---
+- name: Deploy CentOS 7 VM to ESXi
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Clone CentOS 7 VM from Template
+      vmware_guest:
+        hostname: your_esxi_host
+        username: your_esxi_username
+        password: your_esxi_password
+        datacenter: your_datacenter
+        folder: your_folder
+        name: new_vm_name
+        template: centos7_template_name
+        state: poweredon
+      register: vm_details
+
+    - name: Wait for VM to start
+      pause:
+        seconds: 10
+      when: vm_details.changed
+
+    - name: Gather VM facts
+      vmware_guest_facts:
+        hostname: your_esxi_host
+        username: your_esxi_username
+        password: your_esxi_password
+        validate_certs: no
+        datacenter: your_datacenter
+        name: new_vm_name
+      register: vm_facts
+      until: vm_facts.ansible_facts.guest_net[0].ipAddress is defined
+      retries: 10
+      delay: 10
+
+    - name: Power off VM
+      vmware_guest_powerstate:
+        hostname: your_esxi_host
+        username: your_esxi_username
+        password: your_esxi_password
+        validate_certs: no
+        datacenter: your_datacenter
+        name: new_vm_name
+        state: poweredoff
+
+    - name: Change CD/DVD drive to ISO
+      vmware_guest_cd:
+        hostname: your_esxi_host
+        username: your_esxi_username
+        password: your_esxi_password
+        validate_certs: no
+        datacenter: your_datacenter
+        name: new_vm_name
+        state: present
+        iso_path: "[datastore] path/to/centos7.iso"
+
+    - name: Power on VM
+      vmware_guest_powerstate:
+        hostname: your_esxi_host
+        username: your_esxi_username
+        password: your_esxi_password
+        validate_certs: no
+        datacenter: your_datacenter
+        name: new_vm_name
+        state: poweredon
+
+    - name: Wait for VM IP address
+      pause:
+        seconds: 10
+      when: vm_details.changed
+
+    - name: Configure CentOS 7 VM
+      community.general.wait_for:
+        host: "{{ vm_facts.ansible_facts.guest_net[0].ipAddress }}"
+        port: 22
+        delay: 10
+        timeout: 300
+        state: started
+
+    - name: Install EPEL repository
+      community.general.yum:
+        name: epel-release
+        state: present
+
+    - name: Install necessary packages
+      community.general.yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - wget
+        - unzip
+        - vim
+
+    - name: Disable SELinux
+      lineinfile:
+        dest: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX=disabled'
+
+    - name: Reboot VM
+      command: shutdown -r now
+      async: 0
+      poll: 0

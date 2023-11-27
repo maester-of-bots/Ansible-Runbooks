@@ -1,0 +1,16 @@
+---
+- name: Gather facts from vCenter server
+  hosts: localhost
+  tasks:
+    - name: Get VM info from vCenter
+      community.vmware.vmware_vm_info:
+        hostname: HOSTNAME_HERE
+        username: administrator@vsphere.local
+        password: PASSWORD_HERE
+        validate_certs: no
+        vm_type: vm
+        show_attribute: yes
+      register: vm_info
+
+    - name: Display VM info
+      debug: var=vm_info

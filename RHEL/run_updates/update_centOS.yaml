@@ -1,0 +1,10 @@
+---
+- name: Update CentOS 7 server
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure the latest version of all packages are installed
+      yum:
+        name: "*"
+        state: latest
+        update_cache: yes

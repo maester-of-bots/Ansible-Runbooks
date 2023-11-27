@@ -1,0 +1,77 @@
+---
+- name: Install Python 3.11.4 on CentOS 7
+  hosts: tgs_servers
+  become: true
+  vars:
+    python_version: 3.11.4
+
+  tasks:
+    - name: Install required dependencies
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - zlib-devel
+        - bzip2-devel
+        - openssl-devel
+        - ncurses-devel
+        - sqlite-devel
+        - readline-devel
+        - tk-devel
+        - gdbm-devel
+        - libdbi-devel
+        - libdbi-dbd-mysql
+        - libxml2-devel
+        - libxslt-devel
+        - mysql-devel
+        - openssl-devel
+        - libffi-devel
+        - zlib-devel
+        - xz-devel
+        - ncurses-devel
+        - gdbm-devel
+        - expat-devel
+        - libpcap-devel
+
+    - name: Download Python source code
+      get_url:
+        url: "https://www.python.org/ftp/python/3.11.4/Python-3.11.4.tgz"
+        dest: "/tmp/Python-3.11.4.tgz"
+
+    - name: Extract Python source code
+      unarchive:
+        src: "/tmp/Python-3.11.4.tgz"
+        dest: "/tmp/"
+        remote_src: yes
+
+    - name: Build and Install Python
+      shell: |
+        cd /tmp/Python-{{ python_version }}/
+        ./configure --prefix=/usr/local --enable-optimizations
+        make && make altinstall
+      args:
+        executable: /bin/bash
+
+    - name: Clean up Python source code
+      file:
+        path: "/tmp/Python-3.11.4"
+        state: absent
+        recurse: yes
+
+    - name: Add /usr/local/bin to the PATH
+      lineinfile:
+        path: /etc/profile
+        line: "export PATH=$PATH:/usr/local/bin"
+        state: present
+        validate: "source /etc/profile"
+
+    - name: Update cache
+      command: hash -r
+
+    - name: Verify Python installation
+      command: python3.11 --version
+      register: python_version_output
+
+    - name: Display Python version
+      debug:
+        var: python_version_output.stdout

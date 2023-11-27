@@ -1,0 +1,19 @@
+---
+- name: Find folder path of an existing virtual machine
+  hosts: localhost
+  gather_facts: False
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+  tasks:
+    - set_fact:
+        vm_name: "Template-CentOS7-Minimal-2023"
+
+    - name: "Find folder for VM - Template-CentOS7-Minimal-2023"
+      vmware_guest_find:
+        hostname: HOSTNAME_HERE
+        username: administrator@vsphere.local
+        password: PASSWORD_HERE
+        validate_certs: False
+        name: "Template-CentOS7-Minimal-2023"
+      delegate_to: localhost
+      register: vm_facts

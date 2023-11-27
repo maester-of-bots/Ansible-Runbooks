@@ -1,0 +1,47 @@
+---
+- name: Setup Nginx, Virtual Host, Git Repo, and Python venv
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Nginx
+      package:
+        name: nginx
+        state: present
+
+    - name: Configure Nginx Virtual Host
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/conf.d/{{app_name}}.conf
+      notify:
+        - Restart Nginx
+
+    - name: Clone or pull Git repo
+      git:
+        repo: https://maester-of-bots:{{GH_KEY}}@github.com/maester-of-bots/{{app_name}}.git
+        dest: {{destination_folder}}
+        version: main
+
+    - name: Create {{app_name}} Service File
+      template:
+        src: app.service.j2
+        dest: /etc/systemd/system/{{app_name}}.service
+      notify:
+        - Reload Systemd
+
+    - name: Start {{app_name}} Service
+      systemd:
+        name: {{app_name}}
+        state: started
+
+    - name: Enable {{app_name}} Service
+      systemd:
+        name: {{app_name}}
+        enabled: yes
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
